@@ -21,10 +21,17 @@ class Server:
         """Cached dataset
         """
         if self.__dataset is None:
-            with open(self.DATA_FILE) as f:
-                reader = csv.reader(f)
-                dataset = [row for row in reader]
-            self.__dataset = dataset[1:]
+            try:
+                with open(self.DATA_FILE) as f:
+                    reader = csv.reader(f)
+                    dataset = [row for row in reader]
+                self.__dataset = dataset[1:]
+            except FileNotFoundError:
+                print(f"Error: Could not find file {self.DATA_FILE}")
+                return []
+            except Exception as e:
+                print(f"Error loading dataset: {e}")
+                return []
 
         return self.__dataset
 

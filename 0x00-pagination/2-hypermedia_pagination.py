@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Simple pagination implementation
+Hypermedia pagination implementation
 """
 import csv
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 
 def index_range(page: int, page_size: int) -> Tuple[int, int]:
@@ -36,10 +36,17 @@ class Server:
         """Cached dataset
         """
         if self.__dataset is None:
-            with open(self.DATA_FILE) as f:
-                reader = csv.reader(f)
-                dataset = [row for row in reader]
-            self.__dataset = dataset[1:]
+            try:
+                with open(self.DATA_FILE) as f:
+                    reader = csv.reader(f)
+                    dataset = [row for row in reader]
+                self.__dataset = dataset[1:]
+            except FileNotFoundError:
+                print(f"Error: Could not find file {self.DATA_FILE}")
+                return []
+            except Exception as e:
+                print(f"Error loading dataset: {e}")
+                return []
 
         return self.__dataset
 
@@ -64,3 +71,27 @@ class Server:
             return []
         
         return dataset[start_index:end_index]
+    
+    def get_hyper(self, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
+        """
+        Return hypermedia pagination for the dataset.
+        
+        Args:
+            page (int): The page number (1-indexed)
+            page_size (int): The number of items per page
+            
+        Returns:
+            Dict: A dictionary containing hypermedia pagination information
+        """
+        data = self.get_page(page, page_size)
+        dataset = self.dataset()
+        total_pages = math.ceil(len(dataset) / page_size)
+        
+        return {
+            'page_size': len(data),
+            'page': page,
+            'data': data,
+            'next_page': page + 1 if page < total_pages else None,
+            'prev_page': page - 1 if page > 1 else None,
+            'total_pages': total_pages
+        }
